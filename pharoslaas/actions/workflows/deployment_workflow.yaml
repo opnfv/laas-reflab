@@ -1,0 +1,47 @@
+---
+version: '2.0'
+pharoslaas.deployment_workflow:
+    description: The master workflow to provision, install, deploy hosts
+    input:
+        - host
+        - installer
+        - scenario
+        - os
+        - booking
+    tasks:
+        image_host:
+            action: pharoslaas.fog_imageWorkflow host=<% $.host %> os=<% $.os %>
+            on-success:
+                - install_fuel: <% $.installer = 'Fuel' %>
+                - install_joid: <% $.installer = 'Joid' %>
+                - install_apex: <% $.installer = 'Apex' %>
+                - install_compass: <% $.installer = 'Compass' %>
+                - change_password: <% not $.installer in list('Fuel','Joid','Apex','Compass') %>
+
+        install_fuel:
+            action: pharoslaas.fuel_workflow host=<% $.host %> scenario=<% $.scenario %>
+            on-success:
+                - change_password
+
+        install_joid:
+            action: pharoslaas.joid_workflow host=<% $.host %> scenario=<% $.scenario %>
+            on-success:
+                - change_password
+
+        install_apex:
+            action: pharoslaas.apex_workflow host=<% $.host %> scenario=<% $.scenario %>
+            on-success:
+                - change_password
+
+        install_compass:
+            action: pharoslaas.compass_workflow host=<% $.host %> scenario=<% $.scenario %>
+            on-success:
+                - change_password
+
+        change_password:
+            action: pharoslaas.password_workflow host=<% $.host %>
+            on-success:
+                - make_vpn_user
+
+        make_vpn_user:
+            action: pharoslaas.vpn_make_user booking=<% $.booking %>

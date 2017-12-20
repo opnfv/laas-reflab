@@ -1,0 +1,16 @@
+---
+chain:
+    -
+        name: "image"
+        ref: "pharoslaas.fog_imageWorkflow"
+        parameters:
+            host: "{{host}}"
+        on-success: "delete_vpn_user"
+
+    -
+        name: "delete_vpn_user"
+        ref: "pharoslaas.vpn_delete_user"
+        parameters:
+            key: "{{key}}"
+
+default: "image"
