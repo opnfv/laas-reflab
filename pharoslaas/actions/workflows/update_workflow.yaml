@@ -1,0 +1,24 @@
+---
+chain:
+
+    -
+        name: "imageHost"
+        ref: "pharoslaas.fog_imageWorkflow"
+        parameters:
+            image: "{{image}}"
+            os: "{{os}}"
+            host: "{{host}}"
+        on-success: "updateHost"
+
+    -
+        name: "updateHost"
+        ref: "pharoslaas.update"
+        parameters:
+            hosts: "{{host}}"
+        on-success: "captureHost"
+
+    -
+        name: "captureHost"
+        ref: "pharoslaas.fog_captureWorkflow"
+        parameters:
+            host: "{{host}}"
