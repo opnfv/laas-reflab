@@ -1,0 +1,18 @@
+---
+fog:
+    address: "http://myfogserver.com/fog/"
+    api_key: "MySecretAPIKey"
+    user_key: "MySecretAPIUserKey"
+
+vpn:
+    server: "myvpn.ldap.server.org"
+    authentication:
+        pass: "password"
+        user: "cn=root,o=opnfv,dc=iol,dc=unh,dc=edu"
+    directory:
+        root: "o=opnfv,dc=iol,dc=unh,dc=edu"
+        user: "ou=People"
+    user:
+        objects:
+            - top
+            - inetOrgPerson

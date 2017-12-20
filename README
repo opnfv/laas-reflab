@@ -1,167 +1,79 @@
-This Lab as a Serice project aims to create on demand OPNFV resources to developers.
-This project will automate the process, to the requested extent, of running an OPNFV
-installer and creating an Openstack environment within OPNFV automatically and on demand.
+OPNFV LAB-AS-A-SERVICE
 
-To run, execute (from the project root):
-    source/deploy.py
+This project automatically provisions, installs, configures, and provides
+access to OPNFV community resources.
 
-To run the Pharos dahsboard listener, which will continualy poll the dashboard and run deployments in the background:
-    source/listen.py --config <conf/pharos.conf>
+REQUIREMENTS:
+    This will only install the LaaS software needed to control the lab you are hosting.
+It is expected that you already have the community servers, FOG, dhcp, dns etc etc running.
+A more comprehensive installer may be created in the future, but for now you need too
+stand up infrastructure yourself. Some specific details:
+ - You will need to have already created all disk images FOG will use
+ - the root user on the stackstorm machine should have ssh keys in every FOG image you plan to use
+ - The stackstorm machine needs to be able to reach all machines it will interact with (the community resources)
 
-
-For convenience, there is a bash script source/stop.sh which will stop the dashboard listener and all related scripts.
-
-BEFORE YOU CAN RUN:
-you must first:
-- Integrate FOG into your infrastructure
-- Fill out the needed configuration files
-- Populate the database with your available hosts
-
-
-FOG:
-Our OPNFV infrastructure uses a FOG server to pxe boot, read and write disk images, and otherwise control the hosts we have available for developers.
-FOG is an open source project, and you can view it here: https://fogproject.org/
-FOG provides an easy and scriptable way to completely wipe and write the disks of our hosts.
-    This makes it quick and simple for us to restore our hosts to a known, clean state after a developer has released control of it.
-
-To run the deploy script, you need to:
-    Have a FOG master running
-    Have your hosts registered to the FOG master
-    Have a 'clean' disk image of for each installer / configuration you wish to support.
-        - Fuel, Compass, and JOID all need different distros / versions to run properly
-        - There is a mapping between images and their installers in the installer's config file
-The FOG server must be reachable by whatever machine is running this LaaS software,
-and have network access to PXE boot all of your hosted dev pods.
-
+TO INSTALL:
+    clone this repo in a clean ubuntu or centos machine. Stackstorm expects to be the
+only process running for the automated install to work. If you want something more complicated,
+do it yourself. This does not require much resources, and works well in a dedicated vm.
+    
+    run:
+        ./install.sh
+    to install stackstorm and the pharos laas addon.
+    
+Now there are two files you must fill out for configuration to be complete.
+    edit /opt/stackstorm/configs/pharoslaas.yaml and /opt/stackstorm/packs/pharoslaas/hosts.json
+according to the guide below. Once done, you can run
+    ./setup.sh
+to stand up and start the stackstorm service.
 
 CONFIGURATION:
-INSTALLERS#############################################################################################
--database               Path to the SQLite database for storing host information.
-                            Should be the same for all installers in most cases.
--dhcp_log               Path to log file containing DHCP information for dev pods.
--dhcp_server            IP address or hostname of the DHCP server which contains the above log file
-                            set to `null` if the same machine will be running dhcp and this project
--fog
---api_key               The FOG api key. You may instead give the path to a file containing the api key.
---server                The URL of the fog server.
-                            ex: http://myServer.com/fog/
---user_key              The FOG api key specific to your user.
-                            You may instead give the path to a secrets file containing the key.
---image_id              The id of the image FOG will use when this installer is requested.
--installer              The name of the installer, as seen from the dashboard.
-                            `null` will match when no installer is selected, or the `None` installer is..
--logging_dir            The directory to create log files in.
-                            Will create the dir if it does not already exist.
--scenario               The default scenario if one is not specified by the user.
-                            NOTE:   automation of different scenarios are not currently supported.
-                                    These values are silently ignored.
--hypervisor_config
---networks              Path to the config file used to define the virtual networks for this installer.
---vms                   Path to the config file used to define the virtual machines for this installer.
--inventory              Path to inventory file mapping dashboard host id's to FOG hostnames.
--vpn_config             Path to the vpn config file
+    hosts.json:
+        This file contains common host configuration and will be loaded into the stackstorm datastore.
+    It is important to understand the structure of this file. It must be valid JSON. It is a list of objects
+    with two attribute, name and value. These objects are put directly into the datastore of stackstorm.
+    The "name" will be the key, and the "value" is the corresponding value put in the datastore. Note that
+    the value of each key value pair is itself valid json, encoded as a string (hence the escaped quotes).
+    This is needed because the stackstorm exclusively stores strings.
+        Lets look at one host entry:
+            "name": "pod1", # This is an arbitrary name, must be in the "hosts" list
+            "value": "{\"pharos_id\": 999,  # this the resource id from the dashboard that corresponds to this host
+                \"fog_name\": \"vm-1.1\",   # this is the name FOG knows the host by
+                \"hostname\": \"pod1\",     # hostname (or ip) that resolves to this host
+                \"ubuntu_image\": 17,       # the FOG image ID for this host that has ubuntu installed
+                \"centos_image\": 22,       # the FOG image ID for this host that has centos installed
+                \"suse_image\": 21          # the FOG image ID for this host that has open-suse installed
+                }"
+        The name of each host ("pod1" in this case) must be in the list of hosts found at the bottom of the file.
+        The hosts list is what stackstorm uses to tell if you have been assigned a booking.
 
+    pharoslaas.json:
+        This is the configuration file for the pharoslaas pack. Looking at each line:
+            fog:
+                address:    # the url of the fog server root
+                api_key:    # the api key for FOG (fog configuration -> fog settings -> api system)
+                user_key:   # the user key for FOG api (user management -> user -> api settings)
+            vpn:
+                server:     # hostname of ldap server
+                authentication:
+                    pass:   # password for user used to control ldap server
+                    user:   # dn of user
+                directory:
+                    root:   # directory that contains the user directory
+                    user:   # the directory that contains all user entries
+                user:
+                    objects:    # list of object classes to add new users to
+                        - top   # example
 
-#########################################################################################################
+STACKSTORM
+    You can read about stackstorm here: https://docs.stackstorm.com/overview.html
+    Stackstorm is an automation server that the LaaS project uses. We have created
+a "pack", which is essentially a plugin for stackstorm. When configured, this pack
+will automatically detect, start, and clean up bookings. The stackstorm web interface
+also allows you to manually run any of the defined actions or workflows.
 
-DOMAINS##################################################################################################
--jinja-template         Path to the jinja xml template used to create libvirt domain xml documents.
--domains                A list of domains. List as many as you want, but be cognizant of hardware limitations
---disk                  Path to the qcow2 disk image for this VM
---interfaces            List of interfaces for the vm
----name                 The name of the network or bridge that provides this interface
----type                 The source of the interface. Either 'bridge' or 'network' is valid, but the bridge
-                            must already exist on the host.
---iso
----URL                  Where to fetch the ISO from
----location             Where to save the ISO to
----used                 Whether this host will use an iso as a boot drive
-                            if `false`, the ISO will not be downloaded
---memory                Memory to allocate to the VM in KiB
---name                  libvirt name of VM
---vcpus                 How many vcpus to allocate to this host.
-#########################################################################################################
-
-NETWORKS#################################################################################################
--jinja-template         Path to jinja template used to create libvirt XML network documents
--networks               List of networks that will be created
---brAddr                ip address of the bridge on the host
---brName                name of the bridge on the host
---cidr                  cidr of the virtual network
---dhcp                  dhcp settingg
----rangeEnd             end of DHCP address range
----rangeStart           start of DHCP address range
----used                 Whether to enable dhcp for this network. Should probably be false.
---forward               Libvirt network forwarding settings
----type                 forwarding type. See libvirt documentation for possible types.
----used                 if `false`, the network is isolated.
---name                  Name of this network in Libvirt
---netmask               Netmask for this network.
-########################################################################################################
-
-PHAROS##################################################################################################
--dashboard              url of the dashboard. https://labs.opnfv.org is the public OPNFV dashboard
--database               path to database to store booking information.
-                            Should be the same db as the host database in most cases
--default_configs        a mappping of installers and their configuration files.
--inventory              path to the inventory file
--logging_dir            Where the pharos dashboard listener should put log files.
--poling                 How many times a second the listener will poll the dashboard
--token                  Your paros api token. May also be a path to a file containing the token
-#######################################################################################################
-
-VPN####################################################################################################
-NOTE: this all assumes you use LDAP authentication
--server                 Domain name of your vpn server
--authenticaion
---pass                  password for your 'admin' user. May also be a path to a secrets file
---user                  full dn of your 'admin' user
--directory
---root                  The lowest directory that this program will need to access
---user                  The directory where users are stored, relative to the given root dir
--user
---objects               A list of object classes that vpn users will belong to.
-                            Most general class should be on top, and get more specific from there.
-                            ex: -top, -inetOrgPerson because `top` is more general
--database               The booking database
--permanent_users        Users that you want to be persistent, even if they have no bookings active
-                            ie: your admin users
-                            All other users will be deleted when they have no mroe bookings
-#######################################################################################################
-
-INVENTORY##############################################################################################
-This file is used to map the resource id's known by pharos to the hostnames known by FOG.
-for example,
-50: fog-machine-4
-51: fog-machine-5
-52: fog-virtualPod-5.1
-#######################################################################################################
-    
-HOW IT WORKS:
-
-0) lab resources are prepared and information is stored in the database
-1) source/listen.py launches a background instance of pharos.py
-    -pharos.py continually polls the dashboard for booking info, and stores it in the database
-2) A known booking begins and pharos.py launches pod_manager.py
-    - pod_manager is launched in a new process, so that the listener continues to poll the dashboard
-      and multiple hosts can be provisioned at once
-3) pod_manager uses FOG to image the host
-4) if requested, pod_manager hands control to deployment_manager to install and deploy OPNFV
-    - deployment_manager instantiates and calls the go() function of the given source/installers/installer subclass
-5) a vpn user is created and random root password is given to the dev pod
-##########The dashboard does not yet support the following actions#############
-6) public ssh key of the user is fetched from the dashboard
-7) user is automatically notified their pod is ready, and given all needed info
-
-
-GENERAL NOTES:
-
-resetDatabase.py relies on FOG to retrieve a list of all hosts available to developers
-
-running:
-    source/resetDatabase.py --both --config <CONFIG_FILE>
-will create a database and populate it.
-WARNING: This will delete existing information if run on a previously initialized database
-
-To aid in visualization and understanding of the resulting topolgy after fully deploying OPNFV and Openstack in
-a development pod, you may review the LaaS_Diagram in this directory.
+FOG
+    You can read about FOG here: https://fogproject.org/
+    FOG - the Free Opensource Ghost, is the tool LaaS uses to capture and deploy disk images to hosts.
+This allows us to install a selected operating system in seconds, and always have a clean known state to
+revert to. 
