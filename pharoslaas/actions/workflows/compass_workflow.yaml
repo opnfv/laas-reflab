@@ -1,0 +1,8 @@
+---
+chain:
+    -
+        name: "compass_install"
+        ref: "opnfv.compass_install"
+        parameters:
+            hosts: "{{host}}"
+            timeout: 7200
