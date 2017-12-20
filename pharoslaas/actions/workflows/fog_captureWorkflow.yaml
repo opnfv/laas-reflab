@@ -1,0 +1,27 @@
+---
+chain:
+    -
+        name: "startCapture"
+        ref: "pharoslaas.fog_captureHost"
+        parameters:
+            host: "{{host}}"
+        on-success: "restartHost"
+    -
+        name: "restartHost"
+        ref: "pharoslaas.restartHost"
+        parameters:
+            host: "{{host}}"
+        on-success: "waitForCapture"
+    -
+        name: "waitForCapture"
+        ref: "pharoslaas.fog_waitForCapture"
+        parameters:
+            host: "{{host}}"
+            on-success: "waitForBoot"
+
+    -
+        name: "waitForBoot"
+        ref: pharoslaas.waitForBoot
+        parameters:
+            host: "{{host}}"
+            timeout: 60

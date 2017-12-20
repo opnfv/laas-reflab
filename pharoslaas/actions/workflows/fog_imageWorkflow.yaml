@@ -1,0 +1,39 @@
+---
+chain:
+    -
+        name: "changeImage"
+        ref: "pharoslaas.fog_changeImage"
+        parameters:
+            image: "{{image}}"
+            host: "{{host}}"
+            os: "{{os}}"
+        on-success: "startImaging"
+
+    -
+        name: "startImaging"
+        ref: pharoslaas.fog_startImaging
+        parameters:
+            host: "{{host}}"
+        on-success: "restartHost"
+
+    -
+        name: "restartHost"
+        ref: pharoslaas.restartHost
+        parameters:
+            host: "{{host}}"
+        on-success: "waitForImaging"
+
+    -
+        name: "waitForImaging"
+        ref: pharoslaas.fog_waitForImaging
+        parameters:
+            host: "{{host}}"
+            timeout: 180
+        on-success: "waitForBoot"
+
+    -
+        name: "waitForBoot"
+        ref: pharoslaas.waitForBoot
+        parameters:
+            host: "{{host}}"
+            timeout: 60
