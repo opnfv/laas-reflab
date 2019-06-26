@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e3b67ffd_5f23af85",
+        "filename": "INFO.yaml",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 7453
+      },
+      "writtenOn": "2019-06-26T20:02:17Z",
+      "side": 1,
+      "message": "This seems like it should be differentiated from the value in the laas repo.",
+      "range": {
+        "startLine": 2,
+        "startChar": 10,
+        "endLine": 2,
+        "endChar": 26
+      },
+      "revId": "f4df605791f24c48357a4804e10d5828e7486e3a",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": false
+    }
+  ]
+}
