@@ -21,7 +21,7 @@ import json
 from st2reactor.sensor.base import PollingSensor
 
 
-class Pharos_api(PollingSensor):
+class Laas_api(PollingSensor):
     """
     This class listens to the dashboard and starts/stops bookings accordingly.
     """
@@ -61,15 +61,15 @@ class Pharos_api(PollingSensor):
 
     def convertTimes(self, booking):
         """
-        this method will take the time reported by Pharos in the
+        this method will take the time reported by Laas in the
         format yyyy-mm-ddThh:mm:ssZ
         and convert it into seconds since the epoch,
         for easier management
         """
-        booking['start'] = self.pharosToEpoch(booking['start'])
-        booking['end'] = self.pharosToEpoch(booking['end'])
+        booking['start'] = self.laasToEpoch(booking['start'])
+        booking['end'] = self.laasToEpoch(booking['end'])
 
-    def pharosToEpoch(self, timeStr):
+    def laasToEpoch(self, timeStr):
         """
         Converts the dates from the dashboard to epoch time.
         """
@@ -103,11 +103,11 @@ class Pharos_api(PollingSensor):
         The provisioning process gets spun up in a subproccess,
         so the api listener is not interupted.
         """
-        host = self.getServer(pharos_id=booking['resource_id'])['hostname']
+        host = self.getServer(laas_id=booking['resource_id'])['hostname']
         self.log.info("Detected a new booking started for host %s", host)
         self.setBookingStatus(booking['id'], 1)  # mark booking started
         # dispatch trigger into system
-        trigger = "pharoslaas.start_deployment_trigger"
+        trigger = "laas.start_deployment_trigger"
         payload = {"host": host, "installer": booking['installer_name']}
         payload['scenario'] = booking['scenario_name']
         payload['booking'] = booking['id']
@@ -117,13 +117,13 @@ class Pharos_api(PollingSensor):
         """
         Resets a host once its booking has ended.
         """
-        host = self.getServer(pharos_id=booking['resource_id'])['hostname']
+        host = self.getServer(laas_id=booking['resource_id'])['hostname']
         self.log.info('Lease expired. Resetting host %s', host)
         self.setBookingStatus(booking['id'], 3)
         self.removeBooking(booking['id'])
         # dispatch trigger to clean
-        host = self.getServer(pharos_id=booking['resource_id'])['hostname']
-        trigger = "pharoslaas.end_deployment_trigger"
+        host = self.getServer(laas_id=booking['resource_id'])['hostname']
+        trigger = "laas.end_deployment_trigger"
         payload = {"host": host, "booking": booking['id']}
         if 'vpn_key' in booking.keys():
             payload['key'] = booking['vpn_key']
@@ -131,7 +131,7 @@ class Pharos_api(PollingSensor):
             payload['key'] = ''
         self.sensor_service.dispatch(trigger=trigger, payload=payload)
 
-    def getServer(self, fog_name=None, hostname=None, pharos_id=None):
+    def getServer(self, fog_name=None, hostname=None, laas_id=None):
         key = ""
         value = ""
         if fog_name is not None:
@@ -140,9 +140,9 @@ class Pharos_api(PollingSensor):
         elif hostname is not None:
             key = "hostname"
             value = hostname
-        elif pharos_id is not None:
-            key = "pharos_id"
-            value = pharos_id
+        elif laas_id is not None:
+            key = "laas_id"
+            value = laas_id
         for server in self.servers:
             if server[key] == value:
                 return server
@@ -192,7 +192,7 @@ class Pharos_api(PollingSensor):
                     )
         self.resource_ids = []
         for host in self.servers:
-            self.resource_ids.append(host['pharos_id'])
+            self.resource_ids.append(host['laas_id'])
         self.log = self.sensor_service.get_logger(name=self.__class__.__name__)
         self.dashboard = self.sensor_service.get_value(
                 name='dashboard_url',
@@ -203,7 +203,7 @@ class Pharos_api(PollingSensor):
 
     def poll(self):
         """
-        this method will continuously poll the pharos dashboard.
+        this method will continuously poll the laas dashboard.
         If a booking is found on our server,
         we will start a deployment in the background with the
         proper config file for the requested

@@ -2,6 +2,6 @@
 chain:
     -
         name: "apex_install"
-        ref: "pharoslaas.apex_install"
+        ref: "laas.apex_install"
         parameters:
             hosts: "{{host}}"

@@ -2,7 +2,7 @@
 chain:
     -
         name: 'fuel_install'
-        ref: 'pharoslaas.fuel_install'
+        ref: 'laas.fuel_install'
         parameters:
             hosts: "{{host}}"
             timeout: 7200

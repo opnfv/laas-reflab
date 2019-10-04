@@ -3,7 +3,7 @@ chain:
 
     -
         name: "imageHost"
-        ref: "pharoslaas.fog_imageWorkflow"
+        ref: "laas.fog_imageWorkflow"
         parameters:
             image: "{{image}}"
             os: "{{os}}"
@@ -12,13 +12,13 @@ chain:
 
     -
         name: "updateHost"
-        ref: "pharoslaas.update"
+        ref: "laas.update"
         parameters:
             hosts: "{{host}}"
         on-success: "captureHost"
 
     -
         name: "captureHost"
-        ref: "pharoslaas.fog_captureWorkflow"
+        ref: "laas.fog_captureWorkflow"
         parameters:
             host: "{{host}}"

@@ -2,7 +2,7 @@
 chain:
     -
         name: "changeImage"
-        ref: "pharoslaas.fog_changeImage"
+        ref: "laas.fog_changeImage"
         parameters:
             image: "{{image}}"
             host: "{{host}}"
@@ -11,21 +11,21 @@ chain:
 
     -
         name: "startImaging"
-        ref: pharoslaas.fog_startImaging
+        ref: laas.fog_startImaging
         parameters:
             host: "{{host}}"
         on-success: "restartHost"
 
     -
         name: "restartHost"
-        ref: pharoslaas.restartHost
+        ref: laas.restartHost
         parameters:
             host: "{{host}}"
         on-success: "waitForImaging"
 
     -
         name: "waitForImaging"
-        ref: pharoslaas.fog_waitForImaging
+        ref: laas.fog_waitForImaging
         parameters:
             host: "{{host}}"
             timeout: 180
@@ -33,7 +33,7 @@ chain:
 
     -
         name: "waitForBoot"
-        ref: pharoslaas.waitForBoot
+        ref: laas.waitForBoot
         parameters:
             host: "{{host}}"
             timeout: 60

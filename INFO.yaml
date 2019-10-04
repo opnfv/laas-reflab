@@ -1,6 +1,6 @@
 ---
-project: 'Lab as a Service - Reference Lab"
-project_creation_date: '2019.06.25'
+project: "Lab as a Service - Reference Lab"
+project_creation_date: "2019.06.25"
 project_category: ''
 lifecycle_state: 'Incubation'
 project_lead: &opnfv_laas_ptl

@@ -32,7 +32,7 @@ curl -sSL https://stackstorm.com/packages/install.sh | bash -s -- --user=st2admi
 sed -i 's/user = stanley/user = root/' /etc/st2/st2.conf
 sed -i 's/ssh_key_file = \/home\/stanley\/.ssh\/stanley_rsa/ssh_key_file = \/root\/.ssh\/id_rsa/' /etc/st2/st2.conf
 
-mv pharoslab/ /opt/stackstorm/packs/
-cp /opt/stackstorm/packs/pharoslab/pharoslab.yaml.example /opt/stackstorm/configs
+mv laaslab/ /opt/stackstorm/packs/
+cp /opt/stackstorm/packs/laaslab/laaslab.yaml.example /opt/stackstorm/configs
 
-echo "stackstorm should now be installed. Please edit /opt/stackstorm/configs/pharoslab.yaml and /opt/stackstorm/packs/pharoslab/hosts.json appropriately and run the setup script"
+echo "stackstorm should now be installed. Please edit /opt/stackstorm/configs/laaslab.yaml and /opt/stackstorm/packs/laaslab/hosts.json appropriately and run the setup script"

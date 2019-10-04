@@ -17,5 +17,5 @@
 
 st2ctl restart
 st2ctl reload --register-all
-st2 run packs.setup_virtualenv packs=pharoslab
-st2 key load /opt/stackstorm/packs/pharoslab/hosts.json
+st2 run packs.setup_virtualenv packs=laaslab
+st2 key load /opt/stackstorm/packs/laaslab/hosts.json

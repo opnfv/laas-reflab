@@ -19,10 +19,10 @@ do it yourself. This does not require much resources, and works well in a dedica
     
     run:
         ./install.sh
-    to install stackstorm and the pharos laas addon.
+    to install stackstorm and the laas addon.
     
 Now there are two files you must fill out for configuration to be complete.
-    edit /opt/stackstorm/configs/pharoslaas.yaml and /opt/stackstorm/packs/pharoslaas/hosts.json
+    edit /opt/stackstorm/configs/laas.yaml and /opt/stackstorm/packs/laas/hosts.json
 according to the guide below. Once done, you can run
     ./setup.sh
 to stand up and start the stackstorm service.
@@ -37,7 +37,7 @@ CONFIGURATION:
     This is needed because the stackstorm exclusively stores strings.
         Lets look at one host entry:
             "name": "pod1", # This is an arbitrary name, must be in the "hosts" list
-            "value": "{\"pharos_id\": 999,  # this the resource id from the dashboard that corresponds to this host
+            "value": "{\"laas_id\": 999,  # this the resource id from the dashboard that corresponds to this host
                 \"fog_name\": \"vm-1.1\",   # this is the name FOG knows the host by
                 \"hostname\": \"pod1\",     # hostname (or ip) that resolves to this host
                 \"ubuntu_image\": 17,       # the FOG image ID for this host that has ubuntu installed
@@ -47,8 +47,8 @@ CONFIGURATION:
         The name of each host ("pod1" in this case) must be in the list of hosts found at the bottom of the file.
         The hosts list is what stackstorm uses to tell if you have been assigned a booking.
 
-    pharoslaas.json:
-        This is the configuration file for the pharoslaas pack. Looking at each line:
+    laas.json:
+        This is the configuration file for the laas pack. Looking at each line:
             fog:
                 address:    # the url of the fog server root
                 api_key:    # the api key for FOG (fog configuration -> fog settings -> api system)

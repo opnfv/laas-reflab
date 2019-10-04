@@ -16,6 +16,6 @@
 ##############################################################################
 
 if git pull ; then
-    rm -rf /opt/stackstorm/packs/pharoslaas/* && cp -r pharoslaas/ /opt/stackstorm/packs/
+    rm -rf /opt/stackstorm/packs/laas/* && cp -r laas/ /opt/stackstorm/packs/
     st2ctl reload --register-all
 fi

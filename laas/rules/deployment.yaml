@@ -15,31 +15,16 @@
 # limitations under the License.                                             #
 ##############################################################################
 
-class_name: "Pharos_api"
-entry_point: "pharos.py"
-description: "polls the dashboard api for deployments"
-poll_interval: 30
-trigger_types:
-    -
-        name: "start_deployment_trigger"
-        descrition: "a simple deployment trigger"
-        payload_schema:
-            type: "object"
-            properties:
-                host:
-                    type: "string"
-                installer:
-                    type: "string"
-                scenario:
-                    type: "string"
-                booking:
-                    type: "string"
-
-    -
-        name: "end_deployment_trigger"
-        description: "marks the end of a booking"
-        payload_schema:
-            host:
-                type: "string"
-            key:
-                type: "string"
+name: on_deployment_trigger
+pack: laas
+description: "rule to link deployment trigger to deployment action"
+enabled: true
+trigger:
+    type: laas.start_deployment_trigger
+action:
+    ref: laas.deployment_workflow
+    parameters:
+        installer: "{{ trigger.installer }}"
+        host: "{{ trigger.host }}"
+        scenario: "{{ trigger.scenario }}"
+        booking: "{{ trigger.booking }}"

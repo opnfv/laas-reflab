@@ -3,7 +3,7 @@ chain:
 
     -
         name: "joid_install"
-        ref: "pharoslaas.joid_install"
+        ref: "laas.joid_install"
         parameters:
             hosts: "{{host}}"
             timeout: "{{timeout}}"

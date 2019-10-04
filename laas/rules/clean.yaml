@@ -16,13 +16,13 @@
 ##############################################################################
 
 name: on_end_deployment_trigger
-pack: pharoslaas
+pack: laas
 description: dummy rule to link end deployment trigger to clean action
 enabled: true
 trigger:
-    type: pharoslaas.end_deployment_trigger
+    type: laas.end_deployment_trigger
 action:
-    ref: pharoslaas.clean-workflow
+    ref: laas.clean-workflow
     parameters:
         host: "{{ trigger.host }}"
         key: "{{trigger.key}}"

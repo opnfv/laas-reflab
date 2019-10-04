@@ -15,14 +15,25 @@
 # limitations under the License.                                             #
 ##############################################################################
 
-name: pharoslaas
-description: Provides all tools needed to host your own OPNFV lab
-keywords:
-    - OPNFV
-    - Lab-as-a-Service
-    - LaaS
-    - Linux
-    - Openstack
-version: 0.0.1
-author: pberberian
-email: pberberian@iol.unh.edu
+description: This is the workflow that will provision the host as requested.
+enabled: true
+runner_type: mistral-v2
+entry_point: workflows/deployment_workflow.yaml
+name: deployment_workflow
+pack: laas
+parameters:
+    installer:
+        required: true
+        type: string
+    host:
+        required: true
+        type: string
+    scenario:
+        required: false
+        type: string
+    os:
+        required: false
+        type: string
+    booking:
+        required: false
+        type: string
