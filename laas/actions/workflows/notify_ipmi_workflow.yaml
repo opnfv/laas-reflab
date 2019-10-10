@@ -1,0 +1,61 @@
+---
+##############################################################################
+# Copyright 2019 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.notify_ipmi_workflow:
+    description: ipmi notification workflow
+    input:
+        - ipmi_key
+        - job_id
+        - task_id
+        - ipmi_name
+        - host
+
+    tasks:
+        resolve_ipmi:
+            action: laas.resolve_host hostname=<% $.ipmi_name %>
+            publish:
+                ipmi_ip: <% task(resolve_ipmi).result.stdout %>
+            on-success: notify_ipmi_user
+
+        notify_ipmi_user:
+            action: laas.notify_ipmi_user
+            input:
+                ipmi_key: <% $.ipmi_key %>
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+                hostname: <% $.ipmi_name %>
+                addr: <% $.ipmi_ip %>
+            on-success: get_ipmi_mac
+
+        get_ipmi_mac:
+            action: laas.get_mac_from_ip
+            input:
+                host: <% $.ipmi_ip %>
+                gateway: "10.10.29.1"
+                user: "st2"
+            publish:
+                ipmi_mac: <% task(get_ipmi_mac).result.stdout %>
+            on-success: notify_ipmi_api
+
+        notify_ipmi_api:
+            action: laas.notify_ipmi_api
+            input:
+                ipmi_key: <% $.ipmi_key %>
+                addr: <% $.ipmi_ip %>
+                mac: <% $.ipmi_mac %>
+                host: <% $.host %>

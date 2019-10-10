@@ -1,0 +1,100 @@
+---
+##############################################################################
+# Copyright 2019 Sawyer Bergeron and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: 1.0
+
+description: "Updates the given image using the given host for scratch space"
+input:
+  - host  # stackstorm recognized host handle
+  - update_from_image  # image to apply to the host and update
+  - update_from_os  # os to apply to the host and update
+  - update_into_image  # image to save the updated image into
+  - update_into_os  # os to save the updated image into
+tasks:
+  get_target_image:  # primary entry point
+    action: laas.fog_getTargetImage
+    input:
+      host: <% ctx().host %>
+      from_image: <% ctx().update_from_image %>
+      from_os: <% ctx().update_from_os %>
+      target_image: <% ctx().update_into_image %>
+      target_os: <% ctx().update_into_os %>
+    next:
+      - when: <% succeeded() %>
+        publish:
+          - target_image: <% result().result %>
+        do: prepare_host
+
+  prepare_host:
+    action: laas.add_management_vlan
+    input:
+      hosts: <% list(ctx().host) %>
+    next:
+      - when: <% succeeded() %>
+        do: get_ipmi_name
+
+  get_ipmi_name:
+    action: laas.get_ipmi_hostname
+    input:
+      host: <% ctx().host %>
+    next:
+      - when: <% succeeded() %>
+        publish:
+          - ipmi_name: <% result().result %>
+        do: ping_ipmi
+
+  ping_ipmi:
+    action: laas.wait_for_host
+    input:
+      hostname: <% ctx().ipmi_name %>
+      timeout: 200
+    next:
+      - when: <% succeeded() %>
+        do: set_boot
+
+  set_boot:
+    action: laas.set_boot_workflow
+    input:
+      host: <% ctx().host %>
+    next:
+      - when: <% succeeded %>
+        do: image_host
+
+  image_host:
+    action: laas.fog_imageWorkflow
+    input:
+      host: <% ctx().host %>
+      image: <% ctx().update_from_image %>
+      os: <% ctx().update_from_os %>
+    next:
+      - when: <% succeeded() %>
+        do: run_updates
+
+  run_updates:
+    action: laas.update
+    input:
+      hosts: <% ctx().host %>
+      timeout: 900
+    next:
+      - when: <% succeeded() %>
+        do: capture_image
+
+  capture_image:  # exit node
+    action: laas.fog_captureWorkflow
+    input:
+      host: <% ctx().host %>
+      image: <% ctx().target_image %>

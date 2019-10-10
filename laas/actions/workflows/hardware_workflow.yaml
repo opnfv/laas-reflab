@@ -1,0 +1,170 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.hardware_workflow:
+    description: fulfills a single hardware task from the dashboard
+    input:
+        - task_id
+        - job_id
+
+    tasks:
+
+        start_task:
+            action: laas.start_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+            publish:
+                retry_count: <% int(0) %>
+                retry_max: <% int(1) %>
+            on-success: get_task
+
+        get_task:
+            action: laas.get_task
+            input:
+                task_id: <% $.task_id %>
+                type: "hardware"
+                job_id: <% $.job_id %>
+            publish:
+                task_data: <% task(get_task).result.result %>
+            on-success:
+                - detect_tasks
+
+        detect_tasks:
+            action: laas.detect_hardware_tasks
+            input:
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+            publish:
+                todo_tasks: <% task(detect_tasks).result.result %>
+            on-success: prepare_host
+
+        prepare_host:
+            action: laas.add_management_vlan
+            input:
+                hosts: <% list($.task_data.id) %>
+            on-complete: wait_for_ipmi
+
+        wait_for_ipmi:
+            action: laas.get_ipmi_hostname host=<% $.task_data.id %>
+            publish:
+                ipmi_name: <% task(wait_for_ipmi).result.result %>
+            on-complete: ping_ipmi
+
+        ping_ipmi:
+            action: laas.wait_for_host
+            input:
+                hostname: <% $.ipmi_name %>
+                timeout: 200
+            on-complete: do_image
+            on-error: task_error
+
+        do_image:
+            action: core.local cmd="exit 0"
+            on-success:
+                - set_boot: <% $.todo_tasks.get(image, false) %>
+                - do_hostname: <% not $.todo_tasks.get(image, false) %>
+
+        set_boot:
+            action: laas.set_boot_workflow
+            input:
+                host: <% $.task_data.get(id) %>
+            on-success: image_host
+            on-error: task_error
+
+        image_host:
+            action: laas.fog_imageWorkflow
+            input:
+                host: <% $.task_data.get(id) %>
+                image: <% str($.task_data.get(image)) %>
+            on-success: do_hostname
+            on-error: retry
+
+        do_hostname:
+            action: core.local cmd="exit 0"
+            on-success:
+                - set_hostname: <% $.todo_tasks.get(hostname, false) %>
+                - do_ipmi: <% not $.todo_tasks.get(hostname, false) %>
+
+        set_hostname:
+            action: laas.set_hostname
+            input:
+                hostname: <% $.task_data.get(hostname) %>
+                host: <% $.task_data.get(id) %>
+            on-error: task_error
+            on-success: do_ipmi
+
+        do_ipmi:
+            action: core.local cmd="exit 0"
+            on-success:
+                - ipmi_create: <% $.todo_tasks.get(ipmi_create, false) %>
+                - do_power: <% not $.todo_tasks.get(ipmi_create, false) %>
+
+        ipmi_create:
+            action: laas.set_ipmi_account_workflow
+            input:
+                host: <% $.task_data.get(id) %>
+            on-error: task_error
+            on-success: notify_ipmi
+
+        notify_ipmi:
+            action: laas.notify_ipmi_workflow
+            input:
+                ipmi_key: "ipmiuser_<% $.task_data.get(id) %>"
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+                ipmi_name: <% $.ipmi_name %>
+                host: <% $.task_data.get(id) %>
+            on-success: do_power
+
+        do_power:
+            action: core.local cmd="exit 0"
+            on-success:
+                - power: <% $.todo_tasks.get(power, false) %>
+                - finish: <% not $.todo_tasks.get(power, false) %>
+
+        power:
+            action: laas.restart_workflow
+            input:
+                host: <% $.task_data.get(id) %>
+                ipmi: true
+                cmd: <% $.task_data.get(power) %>
+            on-success: finish
+            on-error: task_error
+
+        retry:
+            action: core.local cmd="exit 0"
+            publish:
+                retry_count: <% $.retry_count + 1 %>
+            on-success:
+                - set_boot: <% $.retry_count <= $.retry_max %>
+                - task_error: <% $.retry_count > $.retry_max %>
+
+        finish:
+            action: laas.finish_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+
+        task_error:
+            action: laas.error_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+            on-complete:
+                - fail

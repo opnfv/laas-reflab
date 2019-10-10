@@ -1,0 +1,68 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+
+laas.set_hpe_bios_pass_workflow:
+    description: "Will set the password for the bios"
+    type: direct
+    input:
+        - host
+        - password
+
+    tasks:
+
+        get_ipmi_hostname:
+            action: laas.get_ipmi_hostname host=<% $.host %>
+            publish:
+                ipmi_name: <% task(get_ipmi_hostname).result.result %>
+            on-success: get_ipmi_password
+
+        get_ipmi_password:
+            action: laas.get_ipmi_password host=<% $.ipmi_name %>
+            publish:
+                ipmi_password: <% task(get_ipmi_password).result.result %>
+            on-success: get_ipmi_username
+
+        get_ipmi_username:
+            action: laas.get_ipmi_username host=<% $.ipmi_name %>
+            publish:
+                ipmi_user: <% task(get_ipmi_username).result.result %>
+            on-success: get_bios_password
+
+        get_bios_password:
+            action: laas.get_bios_password host=<% $.ipmi_name %>
+            publish:
+                bios_password: <% task(get_bios_password).result.result %>
+            on-success: set_hpe_bios_pass
+
+
+        set_hpe_bios_pass:
+            action: laas.set_hpe_bios_pass
+            input:
+                host: <% $.ipmi_name %>
+                user: <% $.ipmi_user %>
+                adminPass: <% $.ipmi_password %>
+                oldPass: <% $.bios_password %>
+                newPass: <% $.password %>
+            on-success: update_db
+
+        update_db:
+            action: laas.update_bios_password
+            input:
+                host: <% $.host %>
+                password: <% $.password %>

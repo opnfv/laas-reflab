@@ -16,3 +16,13 @@ vpn:
         objects:
             - top
             - inetOrgPerson
+
+bot:
+    address: "http://my-bot.com/endpoint"
+    endpoints:
+        notification: "/notification"
+        failure: "/failure"
+
+dashboard:
+    address: "https://labs.lfnetworking.org"
+    lab_name: "MY_LAB"

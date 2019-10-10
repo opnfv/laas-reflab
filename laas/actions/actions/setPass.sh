@@ -15,24 +15,5 @@
 # limitations under the License.                                             #
 ##############################################################################
 
-#installs deps 
-if which apt ; then
-    apt update && apt -y upgrade
-    apt -y install libvirt-dev curl gcc libsas12-dev python-dev libldap2-dev libssl-dev
-elif which yum ; then
-    yum -y update
-    yum -y install curl libvirt-devel gcc python-devel openldap-devel
-else
-    echo "Can only run on ubuntu or centos. exiting"
-    exit 1
-fi
-#run their install script
-curl -sSL https://stackstorm.com/packages/install.sh | bash -s -- --user=st2admin --password='admin'
-#change ssh user to root
-sed -i 's/user = stanley/user = root/' /etc/st2/st2.conf
-sed -i 's/ssh_key_file = \/home\/stanley\/.ssh\/stanley_rsa/ssh_key_file = \/root\/.ssh\/id_rsa/' /etc/st2/st2.conf
-
-mv laaslab/ /opt/stackstorm/packs/
-cp /opt/stackstorm/packs/laaslab/laaslab.yaml.example /opt/stackstorm/configs
-
-echo "stackstorm should now be installed. Please edit /opt/stackstorm/configs/laaslab.yaml and /opt/stackstorm/packs/laaslab/hosts.json appropriately and run the setup script"
+pass=$(st2 key get "$2" --decrypt | grep 'value' | awk '{print $4}')
+ssh -o userknownhostsfile=/dev/null -o stricthostkeychecking=no root@"$1" "echo -e '$pass\n$pass' | passwd"

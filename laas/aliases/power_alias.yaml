@@ -1,0 +1,11 @@
+---
+name: power_alias.yaml
+pack: laas
+action_ref: laas.restart_workflow
+formats:
+    - "restart {{host}} {{cmd=cycle}}"
+    - "restart {{host}} without ipmi {{cmd=cycle}} {{ipmi=false}}"
+    - "boot {{host}} {{cmd=on}}"
+    - "boot {{host}} without ipmi {{cmd=on}} {{ipmi=false}}"
+    - "(shutdown|poweroff) {{host}} {{cmd=off}}"
+    - "(shutdown|poweroff) {{host}} without ipmi {{cmd=off}} {{ipmi=false}}"

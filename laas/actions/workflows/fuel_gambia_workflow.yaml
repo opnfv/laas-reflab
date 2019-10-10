@@ -1,0 +1,77 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.fuel_gambia_workflow:
+    description: the workflow to deploy fuel version Gambia
+    input:
+        - hosts
+        - jumphost
+        - scenario
+        - virtual
+        - subversion
+        - pdf
+        - idf
+
+    tasks:
+        check_virtual:
+            action: core.local cmd="exit 0"
+            on-success:
+                - prepare_virt_deploy: <% $.virtual %>
+                - start_hardware_deploy: <% not $.virtual %>
+
+        prepare_virt_deploy:
+            action: laas.fuel_gambia_virtual_prepare
+            input:
+                host: <% $.hosts[0].keys().first() %>
+            on-success: virt_deploy
+
+        virt_deploy:
+            action: laas.fuel_gambia_virtual_deploy
+            input:
+                roles: <% $.hosts[0].keys().first() %>
+                scenario: <% $.scenario %>
+                subversion: <% $.subversion %>
+                timeout: 7200
+            on-success:
+                - succeed
+
+        start_hardware_deploy:
+            action: laas.get_fuel_bridges
+            input:
+                hosts: <% $.hosts %>
+            publish:
+                bridges: <% task(start_hardware_deploy).result.result %>
+            on-success:
+                - prepare_hardware_deploy
+
+        prepare_hardware_deploy:
+            action: laas.prepare_fuel_gambia_baremetal
+            input:
+                hosts: <% $.jumphost %>
+                mapping: <% $.bridges %>
+                timeout: 300
+            on-success:
+                - hardware_deploy
+
+        hardware_deploy:
+            action: laas.deploy_fuel_gambia_baremetal
+            input:
+                pdf: <% $.pdf %>
+                idf: <% $.idf %>
+            on-success:
+                - succeed

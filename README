@@ -1,54 +1,111 @@
-OPNFV LAB-AS-A-SERVICE
+OPNFV Lab as a Service Backend
+==============================
 
-This project automatically provisions, installs, configures, and provides
-access to OPNFV community resources.
+This project automatically provisions, installs, configures, and provides access to the hardware hosted in Lab-as-a-Service (LaaS). This code is designed to consume the api of the Lab as a Service dashboard ([here](https://git.opnfv.org/laas-reflab))
 
-REQUIREMENTS:
-    This will only install the LaaS software needed to control the lab you are hosting.
-It is expected that you already have the community servers, FOG, dhcp, dns etc etc running.
-A more comprehensive installer may be created in the future, but for now you need too
-stand up infrastructure yourself. Some specific details:
- - You will need to have already created all disk images FOG will use
- - the root user on the stackstorm machine should have ssh keys in every FOG image you plan to use
- - The stackstorm machine needs to be able to reach all machines it will interact with (the community resources)
+Overview
+--------
 
-TO INSTALL:
-    clone this repo in a clean ubuntu or centos machine. Stackstorm expects to be the
-only process running for the automated install to work. If you want something more complicated,
-do it yourself. This does not require much resources, and works well in a dedicated vm.
-    
-    run:
-        ./install.sh
-    to install stackstorm and the laas addon.
-    
-Now there are two files you must fill out for configuration to be complete.
-    edit /opt/stackstorm/configs/laas.yaml and /opt/stackstorm/packs/laas/hosts.json
-according to the guide below. Once done, you can run
-    ./setup.sh
-to stand up and start the stackstorm service.
+This is an outline of what happens on the backend when a user creates a booking on the dashboard:
+```
+---------------------       ---------------------       ---------------------       ---------------------
+| Booking request   |       | Hardware tasks are|       | Machines are      |       | Network tasks are |
+| in api is consumed|       | parsed. Host is   |       | PXE booted and    |       | parsed. Management|
+| by stackstorm     | ----->| added to the pxe  | ----->| imaged by FOG.    | ----->| connection is     | ______
+|                   |       | and management    |       | Hostname is set.  |       | established with  |       |
+|                   |       | networks          |       |                   |       | newly imaged      |       |
+|                   |       |                   |       |                   |       | machine           |       |
+---------------------       ---------------------       ---------------------       ---------------------       |
+        ________________________________________________________________________________________________________|
+        ||
+        \/
+---------------------       ---------------------       ---------------------       ---------------------
+| Host network      |       | Switches are      |       | The new public IP |       | Access Tasks are  |
+| config files are  |       | configured based  |       | and hostname is   |       | parsed. User's SSH|
+| written. Host is  |       | on requested L2   |       | gven to the user  |       | keys are coppied  |
+| rebooted to apply | ----->| configuration.    | ----->|                   | ----->| to thier machines.| ______
+| new config.       |       | Wait for host to  |       |                   |       | VPN credentials   |       |
+| Connection is lost|       | connect over new  |       |                   |       | are generated.    |       |
+|                   |       | network.          |       |                   |       |                   |       |
+---------------------       ---------------------       ---------------------       ---------------------       |
+        ________________________________________________________________________________________________________|
+        ||
+        \/
+---------------------
+| Software tasks    |
+| are parsed.       |
+| Virtual OPNFV     |
+| deployments and   |
+| jenkins sandboxing|
+| is performed if   |
+| requested         |
+---------------------
 
-CONFIGURATION:
-    hosts.json:
-        This file contains common host configuration and will be loaded into the stackstorm datastore.
-    It is important to understand the structure of this file. It must be valid JSON. It is a list of objects
-    with two attribute, name and value. These objects are put directly into the datastore of stackstorm.
-    The "name" will be the key, and the "value" is the corresponding value put in the datastore. Note that
-    the value of each key value pair is itself valid json, encoded as a string (hence the escaped quotes).
-    This is needed because the stackstorm exclusively stores strings.
-        Lets look at one host entry:
-            "name": "pod1", # This is an arbitrary name, must be in the "hosts" list
-            "value": "{\"laas_id\": 999,  # this the resource id from the dashboard that corresponds to this host
-                \"fog_name\": \"vm-1.1\",   # this is the name FOG knows the host by
-                \"hostname\": \"pod1\",     # hostname (or ip) that resolves to this host
-                \"ubuntu_image\": 17,       # the FOG image ID for this host that has ubuntu installed
-                \"centos_image\": 22,       # the FOG image ID for this host that has centos installed
-                \"suse_image\": 21          # the FOG image ID for this host that has open-suse installed
-                }"
-        The name of each host ("pod1" in this case) must be in the list of hosts found at the bottom of the file.
-        The hosts list is what stackstorm uses to tell if you have been assigned a booking.
+```
+
+
+Requirements
+------------
+
+This code requires infrastructure to be in place for it to use.
+
+**Networks**
+
+---
+
+At least two seperate L3 networks are used to fulfill a booking:
+* IPMI
+* PXE / Management
+
+Stackstorm needs to be able to boot the machine, FOG PXE boots and writes a disk image, and then Stackstorm will ssh over the Management net to finish configuring the server.
+
+Stackstorm will also need routable access to the admin port of your switches. This could be on the existing management net or on its own network.
+
+
+**FOG**
+
+---
+
+FOG- the Free Opensource Ghost, is what we use to capture and apply disk images. You can read more [here](https://fogproject.org/).
+You will need to install FOG on a machine that is routable from the PXE/admin network. You will have to register all your machines with FOG and create appropriate disk images.
+
+**Stackstorm**
+
+---
+
+Stackstorm, or st2, is an automation server. This is what runs the whole backend booking process. We define all the tasks to be done and stackstorm runs them against the machines that are being booked.
+Stackstorm will need to be installed on a machine that has access to the IPMI network and the Management networks.
+Stackstorm will also need to be able to talk to FOG in order to manage imaging jobs through FOG's api.
+Stackstorm needs passwordless ssh (i.e. ssh keys) to all machines it will manage.
+
+**DHCP, DNS**
+
+---
+
+It is expected that every network has a DHCP server (except possibly IPMI, if you have static addresses configured). You can configure this project to use hostnames for your machines, in which case a DNS server will also be required.
+
+
+Installation
+------------
+
+Once the above infrastructure is in place, the following steps will install the code:
+1)  On the machine with Stackstorm installed, clone this repo
+2)  Fill out the configuration files, examples below
+3)  run `./update.sh` and then `./setup.sh` to install the code 
+
+
+Configuration
+-------------
+
+We will need to configure the LaaS pack, and preload some important values into the st2 datastore.
+
+**Pack Configuration**
+
+---
+
+This is the configuration file for the laas pack. Looking at each line:
 
     laas.json:
-        This is the configuration file for the laas pack. Looking at each line:
             fog:
                 address:    # the url of the fog server root
                 api_key:    # the api key for FOG (fog configuration -> fog settings -> api system)
@@ -65,15 +122,43 @@ CONFIGURATION:
                     objects:    # list of object classes to add new users to
                         - top   # example
 
-STACKSTORM
-    You can read about stackstorm here: https://docs.stackstorm.com/overview.html
-    Stackstorm is an automation server that the LaaS project uses. We have created
-a "pack", which is essentially a plugin for stackstorm. When configured, this pack
-will automatically detect, start, and clean up bookings. The stackstorm web interface
-also allows you to manually run any of the defined actions or workflows.
+**Datastore**
 
-FOG
-    You can read about FOG here: https://fogproject.org/
-    FOG - the Free Opensource Ghost, is the tool LaaS uses to capture and deploy disk images to hosts.
-This allows us to install a selected operating system in seconds, and always have a clean known state to
-revert to. 
+---
+
+The pack needs information to be in the stackstorm datastore so it knows how to access the hosts, reach the dashboard, etc. There are a couple template files that you can fill out that will be loaded into the datastore for you.
+
+
+**hosts.json**
+
+This file contains common host configuration and will be loaded into the stackstorm datastore.
+It is important to understand the structure of this file. It must be valid JSON. It is a list of objects
+with two attribute, name and value. These objects are put directly into the datastore of stackstorm.
+The "name" will be the key, and the "value" is the corresponding value put in the datastore. Note that
+the "value" key maps to a string which is itself valid json, encoded as a string (hence the escaped quotes).
+This is needed because the stackstorm exclusively stores strings.
+
+Lets look at one host entry:
+```
+"name": "pod1", # This is an arbitrary name, must be in the "hosts" list
+"value": "{
+    \"dashboard_id\": 999,         # this the resource id from the dashboard that corresponds to this host
+    \"fog_name\": \"vm-1.1\",   # this is the name FOG knows the host by
+    \"hostname\": \"pod1\",     # hostname (or ip) that resolves to this host
+    \"ubuntu_image\": 17,       # the FOG image ID for the default ubuntu image for this host
+    \"centos_image\": 22,       # the FOG image ID for the default centos image for this host
+    \"suse_image\": 21          # the FOG image ID for the default suse image for this host
+    \"interfaces\": {           # object containing all interface information for the host
+        \"00:11:22:33:44:55\": {                # mac address of interface
+            \"mac\": \"00:11:22:33:44:55\",     # mac address of interface
+            \"bus\": \"0000:04:00.0\",          # bus address of interface, reported by `ethtool -i $ifname`
+            \"switch\": \"10.10.10.10\",        # management IP address of the switch connected to this interface
+            \"port\": \"Ethernet1/34\",         # switch port name where this interface is connected to
+            \"name\": \"eno49\"                 # interface name
+        }
+    }
+}"
+```
+
+The name of each host ("pod1" in this case) must be in the list of hosts found at the bottom of the file.
+The hosts list is what stackstorm uses to know which machines to manage.

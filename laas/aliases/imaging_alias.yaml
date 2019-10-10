@@ -1,0 +1,11 @@
+---
+name: imaging_alias
+pack: laas
+action_ref: laas.fog_imageWorkflow
+formats:
+    - "(image|provision|ghost) {{host}}"
+    - "(image|provision|ghost) {{host}} using image {{image}}"
+    - "(image|provision|ghost) {{host}} with {{os}}"
+    - "(image|provision|ghost) {{host}} without ipmi {{ipmi=false}}"
+    - "(image|provision|ghost) {{host}} using image {{image}} without ipmi {{ipmi=false}}"
+    - "(image|provision|ghost) {{host}} with {{os}} without ipmi {{ipmi=false}}"

@@ -1,0 +1,116 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.access_workflow:
+    description: fulfills a single access task from the dashboard
+    input:
+        - task_id
+        - job_id
+
+    tasks:
+
+        start_task:
+            action: laas.start_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+            on-success: get_task
+
+        get_task:
+            action: laas.get_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+                type: "access"
+            publish:
+                task_data: <% task(get_task).result.result %>
+                lab_token: "null"
+            on-success:
+                - create_access: <% not $.task_data.get("revoke", false) %>
+                - remove_access: <% $.task_data.get("revoke", false) %>
+
+        remove_access:
+            action: core.local cmd="exit 0"
+            on-success:
+                - delete_vpn_user: <% not $.task_data.get("lab_token") = "null" %>
+
+        create_access:
+            action: core.local cmd="exit 0"
+            on-success:
+                - make_vpn_user: <% $.task_data.access_type = "vpn" %>
+                - make_ssh_access: <% $.task_data.access_type = "ssh" %>
+
+        delete_vpn_user:
+            action: laas.vpn_delete_user key=<% $.task_data.lab_token %>
+            on-success: finish
+            on-error: task-error
+
+        make_vpn_user:
+            action: laas.vpn_make_user
+            input:
+                job_id: <% str($.job_id) %>
+            publish:
+                vpn_key: <% task(make_vpn_user).result.result %>
+                lab_token: <% task(make_vpn_user).result.result %>
+            on-success: notify_vpn
+            on-error: task-error
+
+        notify_vpn:
+            action: laas.notify_vpn_user
+            input:
+                vpn_key: <% $.vpn_key %>
+                job_id: <% str($.job_id) %>
+                task_id: <% $.task_id %>
+            on-success: finish
+            on-error: task-error
+
+        make_ssh_access:
+            action: laas.copy_user_keys
+            input:
+                key: <% $.task_data.context.key %>
+                hosts: <% $.task_data.context.hosts.join(",") %>
+            publish:
+                lab_token: "null"
+            on-success: notify_ssh
+            on-error: task-error
+
+        notify_ssh:
+            action: laas.notify_ssh_access
+            input:
+                hosts: <% $.task_data.context.hosts %>
+                user: "opnfv"
+                job_id: <% str($.job_id) %>
+                task_id: <% $.task_id %>
+            on-success: finish
+            on-error: task-error
+
+
+        finish:
+            action: laas.finish_task
+            input:
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+                lab_token: <% $.lab_token %>
+
+        task-error:
+            action: laas.error_task
+            input:
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+            on-complete:
+                - fail

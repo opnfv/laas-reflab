@@ -1,0 +1,157 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.network_workflow:
+    input:
+        - task_id
+        - job_id
+        - to_configure_host
+
+    tasks:
+
+        start_task:
+            action: laas.start_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+            on-success: get_task
+
+        get_task:
+            action: laas.get_task
+            input:
+                task_id: <% $.task_id %>
+                type: "network"
+                job_id: <% $.job_id %>
+            publish:
+                task_data: <% task(get_task).result.result %>
+            on-success:
+                - parse_data: <% to_configure_host %>
+                - configure_switch: <% not to_configure_host %>
+
+        parse_data:
+            action: laas.parse_network_data task_data=<% $.task_data %>
+            publish:
+                mappings: <% task(parse_data).result.result.mappings %>
+                default: <% task(parse_data).result.result.default %>
+                host: <% task(parse_data).result.result.host %>
+                empty: <% task(parse_data).result.result.empty %>
+            on-success:
+                - prepare_host: <% not bool($.empty) %>
+                - configure_switch: <% bool($.empty) %>
+            on-error: task_error
+
+        prepare_host:
+            action: laas.add_management_vlan
+            input:
+                hosts: <% $.task_data.keys() %>
+            on-success: wait_for_host
+            on-error: task_error
+
+        wait_for_host:
+            action: laas.waitForBoot host=<% $.host %> timeout=1200
+            on-success: configure_host
+            on-error: task_error
+
+        configure_host:
+            action: laas.configure_host_networking
+            input:
+                mapping: <% $.mappings %>
+                default: <% $.default %>
+                hosts: <% $.host %>
+            on-success: configure_switch
+            on-error: task_error
+
+        configure_switch:
+            action: laas.network_task network_data=<% $.task_data %>
+            on-success:
+                - wait_for_ipmi: <% not bool($.empty) %>
+                - finish: <% bool($.empty) %>
+            on-error: task_error
+
+        wait_for_ipmi:
+            action: laas.get_ipmi_hostname host=<% $.host %>
+            publish:
+                ipmi_name: <% task(wait_for_ipmi).result.result %>
+            on-success: wait_for_ipmi_connection
+
+        wait_for_ipmi_connection:
+            action: laas.wait_for_host
+            input:
+                hostname: <% $.ipmi_name %>
+                timeout: 300
+            on-success: restart_host
+
+        restart_host:
+            action: laas.restart_workflow
+            input:
+                host: <% $.host %>
+            on-success: second_wait_for_host
+            on-error: task_error
+
+        second_wait_for_host:
+            action: laas.waitForBoot host=<% $.host %> timeout=1200
+            on-success: find_address
+            on-error: task_error
+
+        find_address:
+            action: laas.get_dhcp_address
+            input:
+                host: <% $.host %>
+            publish:
+                address: <% task(find_address).result.stdout %>
+            on-success: notify_ip
+            on-error: retry_find_address
+
+        retry_find_address:
+            action: core.local
+            input:
+                cmd: sleep 30
+            on-complete: second_find_address
+
+        second_find_address:
+            action: laas.get_dhcp_address
+            input:
+                host: <% $.host %>
+            publish:
+                address: <% task(second_find_address).result.stdout %>
+            on-success: notify_ip
+            on-error: task_error
+
+        notify_ip:
+            action: laas.notify_ip_address
+            input:
+                addresses: <% $.address %>
+                hostname: <% $.host %>
+                job_id: <% $.job_id %>
+                task_id: <% $.task_id %>
+            on-success: finish
+            on-error: task_error
+
+        finish:
+            action: laas.finish_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+
+        task_error:
+            action: laas.error_task
+            input:
+                task_id: <% $.task_id %>
+                job_id: <% $.job_id %>
+            on-complete:
+                - fail

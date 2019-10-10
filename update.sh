@@ -14,8 +14,16 @@
 # See the License for the specific language governing permissions and        #
 # limitations under the License.                                             #
 ##############################################################################
+case "$1" in
+    "--no-git")
+        true;;  # noop
+    "")
+        git pull;;
+    *)
+        echo "I did not understand the arg $1"
+        exit 1
+        ;;
+esac
 
-if git pull ; then
-    rm -rf /opt/stackstorm/packs/laas/* && cp -r laas/ /opt/stackstorm/packs/
-    st2ctl reload --register-all
-fi
+rm -rf /opt/stackstorm/packs/laas/* && cp -r laas/ /opt/stackstorm/packs/
+st2ctl reload --register-all

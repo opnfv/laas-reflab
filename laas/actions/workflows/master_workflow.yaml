@@ -1,0 +1,74 @@
+---
+##############################################################################
+# Copyright 2018 Parker Berberian and Others                                 #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the License);              #
+# you may not use this file except in compliance with the License.           #
+# You may obtain a copy of the License at                                    #
+#                                                                            #
+#    http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an AS IS BASIS,            #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+##############################################################################
+
+version: '2.0'
+laas.master_workflow:
+    description: master workflow to fulfill a job
+    input:
+        - job_id
+
+    tasks:
+        start_job:
+            action: laas.start_job job_id=<% $.job_id %>
+            on-success:
+                - hardware_master_workflow
+            on-error:
+                - fail_job
+
+        hardware_master_workflow:
+            action: laas.hardware_master_workflow job_id=<% $.job_id %>
+            on-success:
+                - network_master_workflow
+            on-error:
+                - fail_job
+
+        network_master_workflow:
+            action: laas.network_master_workflow job_id=<% $.job_id %>
+            on-success:
+                - access_master_workflow
+            on-error:
+                - fail_job
+
+        access_master_workflow:
+            action: laas.access_master_workflow job_id=<% $.job_id %>
+            on-success:
+                - software_master_workflow
+            on-error:
+                - fail_job
+
+        software_master_workflow:
+            action: laas.software_master_workflow job_id=<% $.job_id %>
+            on-success:
+                - snapshot_master_workflow
+            on-error:
+                - fail_job
+
+        snapshot_master_workflow:
+            action: laas.snapshot_master_workflow job_id=<% $.job_id %>
+            on-success:
+                - finish_job
+            on-error:
+                - fail_job
+
+        fail_job:
+            action: laas.send_bot_failure
+            input:
+                job_id: <% $.job_id %>
+                execution_id: <% env().st2_execution_id %>
+
+        finish_job:
+            action: laas.finish_job job_id=<% $.job_id %>

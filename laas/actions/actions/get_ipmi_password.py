@@ -1,6 +1,5 @@
----
 ##############################################################################
-# Copyright 2017 Parker Berberian and Others                                 #
+# Copyright 2018 Parker Berberian and Others                                 #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License");            #
 # you may not use this file except in compliance with the License.           #
@@ -15,31 +14,16 @@
 # limitations under the License.                                             #
 ##############################################################################
 
-class_name: "Laas_api"
-entry_point: "lass.py"
-description: "polls the dashboard api for deployments"
-poll_interval: 30
-trigger_types:
-    -
-        name: "start_deployment_trigger"
-        descrition: "a simple deployment trigger"
-        payload_schema:
-            type: "object"
-            properties:
-                host:
-                    type: "string"
-                installer:
-                    type: "string"
-                scenario:
-                    type: "string"
-                booking:
-                    type: "string"
+import sqlite3
+from st2actions.runners.pythonrunner import Action
 
-    -
-        name: "end_deployment_trigger"
-        description: "marks the end of a booking"
-        payload_schema:
-            host:
-                type: "string"
-            key:
-                type: "string"
+
+class ipmi_passwdAction(Action):  # TODO: create base class with other ipmi actions
+
+    def run(self, host=None):
+        db = self.action_service.get_value(name="database", local=False)
+        db = sqlite3.connect(db)
+        c = db.cursor()
+        password = c.execute("SELECT pass FROM ipmi WHERE host=?", (host,)).fetchone()
+        db.close()
+        return password[0]
