@@ -1,0 +1,176 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b3530001_0a3c964e",
+        "filename": "laas/actions/actions/apex_gambia_virtual_deploy.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "whitespace",
+      "range": {
+        "startLine": 33,
+        "startChar": 0,
+        "endLine": 33,
+        "endChar": 4
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ac406d56_95b12860",
+        "filename": "laas/actions/actions/fog_waitForCapture.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "If the constructor is exactly the same (def __init__(self, config\u003dNone):), then this can be removed. Otherwise, the comment can be removed, because the default config variable being None is different.",
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c75243e4_60db9c64",
+        "filename": "laas/actions/actions/fog_waitForCapture.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "parens not needed",
+      "range": {
+        "startLine": 27,
+        "startChar": 10,
+        "endLine": 27,
+        "endChar": 29
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a4178e92_f95729dd",
+        "filename": "laas/actions/actions/fog_waitForImaging.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "Same",
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7cd0fbd7_1af8bed8",
+        "filename": "laas/actions/actions/fog_waitForImaging.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "Same",
+      "range": {
+        "startLine": 30,
+        "startChar": 10,
+        "endLine": 30,
+        "endChar": 27
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "bdfe6acc_b75bc7d3",
+        "filename": "laas/actions/actions/get_ipmi_password.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "This pattern seems to be used a lot. It doesn\u0027t have to be in this patch, but I recommend creating a context manager that returns the cursor to use.\n\nThen the final code body would look something like:\n\nwith db_connection() as cursor:\n    return cursor.execute(\"...\").fetchone()[0]",
+      "range": {
+        "startLine": 24,
+        "startChar": 0,
+        "endLine": 28,
+        "endChar": 18
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b37e9dd3_3b00bba5",
+        "filename": "laas/actions/actions/prepare_fuel_gambia_baremetal.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 139,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "ws",
+      "range": {
+        "startLine": 139,
+        "startChar": 8,
+        "endLine": 139,
+        "endChar": 9
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "173dc15f_7e312fa0",
+        "filename": "laas/actions/actions/update.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 7509
+      },
+      "writtenOn": "2019-10-15T15:31:30Z",
+      "side": 1,
+      "message": "ws",
+      "range": {
+        "startLine": 25,
+        "startChar": 4,
+        "endLine": 25,
+        "endChar": 8
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    }
+  ]
+}
