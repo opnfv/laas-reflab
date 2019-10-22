@@ -128,6 +128,30 @@
     },
     {
       "key": {
+        "uuid": "952a21ee_c2777e26",
+        "filename": "laas/actions/actions/get_ipmi_password.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 6929
+      },
+      "writtenOn": "2019-10-22T15:22:02Z",
+      "side": 1,
+      "message": "This whole thing a hack... In a future patch I plan to remove this whole DB and rely on the stackstorm native keystore entirely",
+      "parentUuid": "bdfe6acc_b75bc7d3",
+      "range": {
+        "startLine": 24,
+        "startChar": 0,
+        "endLine": 28,
+        "endChar": 18
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b37e9dd3_3b00bba5",
         "filename": "laas/actions/actions/prepare_fuel_gambia_baremetal.sh",
         "patchSetId": 1
@@ -171,6 +195,29 @@
       "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
       "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "67477331_36d6e710",
+        "filename": "test.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 6929
+      },
+      "writtenOn": "2019-10-22T15:22:02Z",
+      "side": 1,
+      "message": "whitespace",
+      "range": {
+        "startLine": 21,
+        "startChar": 0,
+        "endLine": 21,
+        "endChar": 4
+      },
+      "revId": "ab24a8de07dac62569ec79425241a6b974ed32a9",
+      "serverId": "bbac25d2-bf60-4904-9ba8-a72fc000d6c5",
+      "unresolved": false
     }
   ]
 }
